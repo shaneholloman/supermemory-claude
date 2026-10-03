@@ -7,13 +7,28 @@ function returnedFacts(contexts, tag) {
     )?.[1];
     if (!block) continue;
     let scope = tag === 'supermemory-recall' ? 'prompt' : 'profile';
+    let current;
     for (const line of block.split('\n')) {
-      if (line.startsWith('## User Profile')) scope = 'profile';
-      if (line.startsWith('## Recent Context')) scope = 'recent';
+      if (line.startsWith('## User Profile')) {
+        scope = 'profile';
+        current = undefined;
+        continue;
+      }
+      if (line.startsWith('## Recent Context')) {
+        scope = 'recent';
+        current = undefined;
+        continue;
+      }
       const text = line.match(/^- ◪ (.+)$/)?.[1];
-      if (text) facts.push({ scope, text });
+      if (text) {
+        current = { scope, text };
+        facts.push(current);
+      } else if (tag === 'supermemory-context' && current) {
+        current.text += `\n${line}`;
+      }
     }
   }
+  for (const fact of facts) fact.text = fact.text.trimEnd();
   return facts;
 }
 
@@ -31,19 +46,26 @@ export function register(on) {
     facts = [];
     selected = -1;
     browse = false;
-    const result = await next(e);
-    facts = returnedFacts(result.additionalContext, 'supermemory-context');
-    $.ui.invalidate('ui.render');
-    return result;
+    try {
+      const result = await next(e);
+      facts = returnedFacts(result.additionalContext, 'supermemory-context');
+      return result;
+    } finally {
+      $.ui.invalidate('ui.render');
+    }
   });
 
   on('classic.UserPromptSubmit', async ($, e, next) => {
-    const result = await next(e);
-    facts = returnedFacts(result.additionalContext, 'supermemory-recall');
-    selected = -1;
-    browse = false;
-    $.ui.invalidate('ui.render');
-    return result;
+    try {
+      facts = [];
+      selected = -1;
+      browse = false;
+      const result = await next(e);
+      facts = returnedFacts(result.additionalContext, 'supermemory-recall');
+      return result;
+    } finally {
+      $.ui.invalidate('ui.render');
+    }
   });
 
   on(
@@ -54,7 +76,10 @@ export function register(on) {
       if (e.props.hasSurvey || facts.length === 0) return original;
 
       const { Box, Text, Button } = $.ui.resolve(e);
-      const width = Math.max(24, Math.min(64, e.props.bodyColumns - 4));
+      const width = Math.min(
+        e.props.bodyColumns,
+        Math.max(1, Math.min(64, e.props.bodyColumns - 4)),
+      );
       const chip = (fact, index) =>
         Box({
           key: `recall-${index}`,
@@ -105,6 +130,7 @@ export function register(on) {
       return Box({
         flexDirection: 'column',
         children: [
+          original,
           Box({
             flexDirection: 'row',
             flexWrap: 'wrap',
