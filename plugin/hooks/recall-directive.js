@@ -14,7 +14,12 @@ const {
   debugLog,
   getRecallConfig,
 } = require('./lib/settings');
-const { atomicWriteJson, getSessionDir } = require('./lib/session-state');
+const {
+  atomicWriteJson,
+  getSessionDir,
+  readState,
+  writeState,
+} = require('./lib/session-state');
 const { readStdin, writeOutput } = require('./lib/stdin');
 
 // Recall is performed HERE, not delegated to the model: the hook searches
@@ -176,6 +181,15 @@ async function main() {
     const seenSet = new Set(seen);
     const fresh = results.filter((r) => !seenSet.has(hashText(resultText(r))));
     const repeats = results.length - fresh.length;
+
+    if (input.session_id) {
+      const prev = readState(input.session_id, 'search') || {};
+      writeState(input.session_id, 'search', {
+        results: fresh.length,
+        count: (prev.count || 0) + 1,
+        memories: (prev.memories || 0) + fresh.length,
+      });
+    }
 
     debugLog(settings, 'Prompt recall', {
       query: prompt.slice(0, 80),

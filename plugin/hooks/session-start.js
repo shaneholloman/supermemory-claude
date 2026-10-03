@@ -16,7 +16,7 @@ const { readStdin, writeOutput } = require('./lib/stdin');
 const { startAuthFlow, AUTH_BASE_URL } = require('./lib/auth');
 const { getUserFriendlyError } = require('./lib/error-helpers');
 const { LAST_SESSION_FILE } = require('./lib/last-session');
-const { pruneState } = require('./lib/session-state');
+const { pruneState, writeState } = require('./lib/session-state');
 
 const STATUSLINE_INSTALLED_FILE = path.join(
   os.homedir(),
@@ -134,13 +134,16 @@ function output(additionalContext, systemMessageParts) {
 
 async function main() {
   const settings = loadSettings();
+  let sessionId;
 
   try {
     const input = await readStdin();
+    sessionId = input.session_id;
     const cwd = input.cwd || process.cwd();
 
     const statuslineCleanupNotice = removeLegacyStatusline();
     pruneState();
+    writeState(sessionId, 'context', { status: 'loading', memoryItemsLoaded: 0 });
 
     const projectConfig = loadProjectConfig(cwd);
     const projectName = getProjectName(cwd);
@@ -155,6 +158,7 @@ async function main() {
       try {
         apiKey = await startAuthFlow();
       } catch (authErr) {
+        writeState(sessionId, 'context', { status: 'error', memoryItemsLoaded: 0 });
         output(
           `<supermemory-status>
 ${authErr.message === 'AUTH_TIMEOUT' ? 'Authentication timed out. Please complete login in the browser window.' : 'Authentication failed.'}
@@ -190,6 +194,11 @@ Or set the SUPERMEMORY_CC_API_KEY environment variable.
       Math.min(profileResult?.profile?.static?.length || 0, settings.maxProfileItems) +
       Math.min(profileResult?.profile?.dynamic?.length || 0, settings.maxProfileItems);
 
+    writeState(sessionId, 'context', {
+      status: apiError ? 'error' : 'ready',
+      memoryItemsLoaded: loaded,
+    });
+
     const memoryNotice =
       loaded > 0
         ? `${BRAND} ${gray('·')} ${loaded} ${loaded === 1 ? 'memory' : 'memories'} loaded for ${bold(projectName)}`
@@ -217,6 +226,7 @@ Memories will be saved as you work.
   } catch (err) {
     const friendly = getUserFriendlyError(err);
     console.error(`Supermemory: ${friendly}`);
+    writeState(sessionId, 'context', { status: 'error', memoryItemsLoaded: 0 });
     output(
       `<supermemory-status>
 Failed to load memories: ${friendly}
