@@ -9,6 +9,7 @@ Your agent remembers what you worked on - across sessions, across projects.
 
 - **Team Memory** — Project knowledge shared across your team, separate from personal memories
 - **Auto Capture** — Conversations saved when session ends
+- **Recall strip** — On Claude Code 2.1.287+ in the terminal, see compact chips for facts returned by automatic recall. Hover for the returned text, or focus and press Enter; older versions continue using the existing memory hooks without the strip
 - **Project Config** — Per-repo settings, API keys, and container tags
 
 ## Installation
