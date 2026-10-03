@@ -20,7 +20,6 @@ const {
 } = require('./lib/transcript');
 const { getUserFriendlyError } = require('./lib/error-helpers');
 const { saveLastSession } = require('./lib/last-session');
-const { readState, writeState } = require('./lib/statusline-state');
 
 async function main() {
   const settings = loadSettings();
@@ -59,9 +58,6 @@ async function main() {
     const baseUrl = getBaseUrl(cwd, projectConfig);
     const containerTag = getContainerTag(cwd);
 
-    const captured = readState(sessionId).capture?.count || 0;
-    writeState(sessionId, 'capture', { status: 'saving', count: captured });
-
     const result = await addMemory(
       baseUrl,
       apiKey,
@@ -79,7 +75,6 @@ async function main() {
     );
 
     setLastCapturedUuid(sessionId, delta.lastUuid);
-    writeState(sessionId, 'capture', { status: 'saved', count: captured + 1 });
 
     if (result?.id) {
       try {
@@ -93,7 +88,6 @@ async function main() {
     const friendly = getUserFriendlyError(err);
     debugLog(settings, 'Capture error', { error: friendly });
     console.error(`Supermemory: ${friendly}`);
-    writeState(sessionId, 'capture', { status: 'error' });
     writeOutput({ continue: true });
   }
 }
