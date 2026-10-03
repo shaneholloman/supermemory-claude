@@ -12,7 +12,7 @@ Your agent remembers what you worked on - across sessions, across projects.
 - **Recall strip** — On Claude Code 2.1.287+ in the terminal, see compact chips for facts returned by automatic recall. Hover for the returned text, or focus and press Enter
 - **Project Config** — Per-repo settings, API keys, and container tags
 
-On Claude Code 2.1.250, local marketplace install/update and the existing command hooks were verified, but `claude plugin validate` rejects the recall mod's `classic.SessionStart` event. The strip is not available on that version; other older versions and install sources have not been verified.
+On Claude Code 2.1.250, local marketplace install/update and the `SessionStart` and `UserPromptSubmit` command hooks were verified, but `claude plugin validate` rejects the recall mod's `classic.SessionStart` event. The strip is not available on that version; other older versions and install sources have not been verified.
 
 ## Installation
 
