@@ -27,10 +27,38 @@ function returnedFacts(contexts, tag) {
   return facts.map((fact) => fact.trimEnd());
 }
 
+const headlines = [
+  (count, narrow) =>
+    narrow
+      ? `clarified ${count}`
+      : `supermemory clarified ${count} ${count === 1 ? 'thing' : 'things'}`,
+  (count, narrow) =>
+    narrow
+      ? `surfaced ${count}`
+      : `supermemory surfaced ${count} ${count === 1 ? 'detail' : 'details'}`,
+  (count, narrow) =>
+    narrow
+      ? `${count} brought back`
+      : `supermemory brought back ${count} ${count === 1 ? 'memory' : 'memories'}`,
+  (count, narrow) =>
+    narrow
+      ? `found ${count}`
+      : `supermemory found ${count} ${count === 1 ? 'useful detail' : 'useful details'}`,
+  (count, narrow) =>
+    narrow
+      ? `uncovered ${count}`
+      : `supermemory uncovered ${count} ${count === 1 ? 'detail' : 'details'}`,
+  (count, narrow) =>
+    narrow
+      ? `remembers ${count}`
+      : `supermemory remembered ${count} ${count === 1 ? 'thing' : 'things'}`,
+];
+
 export function register(on) {
   let facts = [];
   let expanded = false;
   let active = 0;
+  let headlineIndex = Math.floor(Math.random() * headlines.length) - 1;
 
   on('classic.SessionStart', async ($, e, next) => {
     facts = [];
@@ -39,6 +67,7 @@ export function register(on) {
     try {
       const result = await next(e);
       facts = returnedFacts(result.additionalContext, 'supermemory-context');
+      if (facts.length) headlineIndex = (headlineIndex + 1) % headlines.length;
       return result;
     } finally {
       $.ui.invalidate('ui.render');
@@ -52,6 +81,7 @@ export function register(on) {
       active = 0;
       const result = await next(e);
       facts = returnedFacts(result.additionalContext, 'supermemory-recall');
+      if (facts.length) headlineIndex = (headlineIndex + 1) % headlines.length;
       return result;
     } finally {
       $.ui.invalidate('ui.render');
@@ -70,10 +100,7 @@ export function register(on) {
         e.props.bodyColumns,
         Math.max(1, Math.min(64, e.props.bodyColumns - 4)),
       );
-      const label =
-        e.props.bodyColumns < 32
-          ? `◪ ${facts.length} clarified`
-          : `◪ supermemory clarified ${facts.length} ${facts.length === 1 ? 'thing' : 'things'}`;
+      const label = `◪ ${headlines[headlineIndex](facts.length, e.props.bodyColumns < 32)}`;
 
       return Box({
         flexDirection: 'column',
