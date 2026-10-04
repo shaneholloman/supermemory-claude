@@ -30,10 +30,12 @@ function returnedFacts(contexts, tag) {
 export function register(on) {
   let facts = [];
   let expanded = false;
+  let active = 0;
 
   on('classic.SessionStart', async ($, e, next) => {
     facts = [];
     expanded = false;
+    active = 0;
     try {
       const result = await next(e);
       facts = returnedFacts(result.additionalContext, 'supermemory-context');
@@ -47,6 +49,7 @@ export function register(on) {
     try {
       facts = [];
       expanded = false;
+      active = 0;
       const result = await next(e);
       facts = returnedFacts(result.additionalContext, 'supermemory-recall');
       return result;
@@ -67,6 +70,10 @@ export function register(on) {
         e.props.bodyColumns,
         Math.max(1, Math.min(64, e.props.bodyColumns - 4)),
       );
+      const label =
+        e.props.bodyColumns < 32
+          ? `◪ ${facts.length} clarified`
+          : `◪ supermemory clarified ${facts.length} ${facts.length === 1 ? 'thing' : 'things'}`;
 
       return Box({
         flexDirection: 'column',
@@ -74,11 +81,12 @@ export function register(on) {
           original,
           Button({
             key: 'recall-details',
-            label: `◪ ${facts.length} ${facts.length === 1 ? 'memory' : 'memories'} in context ${expanded ? '▴' : '▾'}`,
+            label: `${label} ${expanded ? '▴' : '▾'}`,
             plain: true,
             dimColor: true,
             onPress: () => {
               expanded = !expanded;
+              if (expanded) active = 0;
               $.ui.invalidate('ui.render');
             },
           }),
@@ -86,11 +94,42 @@ export function register(on) {
             ? Box({
                 paddingX: 1,
                 width,
-                children: Text({
-                  wrap: 'wrap',
-                  dimColor: true,
-                  children: facts.map((fact) => `◪ ${fact}`).join('\n\n'),
-                }),
+                flexDirection: 'column',
+                children: [
+                  Text({ wrap: 'wrap', children: facts[active] }),
+                  facts.length > 1
+                    ? Box({
+                        flexDirection: 'row',
+                        children: [
+                          Button({
+                            key: 'recall-previous',
+                            label: '‹',
+                            plain: true,
+                            dimColor: true,
+                            onPress: () => {
+                              active =
+                                (active - 1 + facts.length) % facts.length;
+                              $.ui.invalidate('ui.render');
+                            },
+                          }),
+                          Text({
+                            dimColor: true,
+                            children: ` ${active + 1}/${facts.length} `,
+                          }),
+                          Button({
+                            key: 'recall-next',
+                            label: '›',
+                            plain: true,
+                            dimColor: true,
+                            onPress: () => {
+                              active = (active + 1) % facts.length;
+                              $.ui.invalidate('ui.render');
+                            },
+                          }),
+                        ],
+                      })
+                    : null,
+                ],
               })
             : null,
         ],
