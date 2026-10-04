@@ -9,7 +9,7 @@ Your agent remembers what you worked on - across sessions, across projects.
 
 - **Team Memory** — Project knowledge shared across your team, separate from personal memories
 - **Auto Capture** — Conversations saved when session ends
-- **Recall strip** — On Claude Code 2.1.287+ in the terminal, press the compact recalled-facts count above the prompt to show or hide the full returned facts
+- **Recall strip** — On Claude Code 2.1.287+ in the terminal, press the compact memories-in-context count above the prompt to show or hide the full returned facts
 - **Project Config** — Per-repo settings, API keys, and container tags
 
 On Claude Code 2.1.250, local marketplace install/update and the `SessionStart` and `UserPromptSubmit` command hooks were verified, but `claude plugin validate` rejects the recall mod's `classic.SessionStart` event. The strip is not available on that version; other older versions and install sources have not been verified.

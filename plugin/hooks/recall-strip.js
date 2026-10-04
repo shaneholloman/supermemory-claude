@@ -74,7 +74,7 @@ export function register(on) {
           original,
           Button({
             key: 'recall-details',
-            label: `◪ ${facts.length} recalled ${expanded ? '▴' : '▾'}`,
+            label: `◪ ${facts.length} ${facts.length === 1 ? 'memory' : 'memories'} in context ${expanded ? '▴' : '▾'}`,
             plain: true,
             dimColor: true,
             onPress: () => {
